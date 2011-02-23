@@ -56,6 +56,10 @@ public class ObjectWriter implements IObjectWriter{
             result.setAffectedRecords(new int[1]);
             result.getAffectedRecords()[0] = preparedStatement.executeUpdate();
             addGeneratedKeys(mapping, preparedStatement, result);
+            if(mapping.getVersiongMapping() != null){
+            	//If succeed to insert, increment version.
+            	mapping.getVersiongMapping().incrementVersion(mapping, object);
+            }
             return result;
         } catch (SQLException e) {
             throw new PersistenceException("Error inserting object into database. Object was: (" +
@@ -79,6 +83,14 @@ public class ObjectWriter implements IObjectWriter{
             UpdateResult result = new UpdateResult();
             result.setAffectedRecords(preparedStatement.executeBatch());
             addGeneratedKeys(mapping, preparedStatement, result);
+            // if versioning object,check update.
+            if(mapping.getVersiongMapping() != null){
+	            IVersioningMapping m = mapping.getVersiongMapping();
+		        for(Object object : objects){
+		            m.incrementVersion(mapping, object);
+		        }
+            }
+            
             return result;
         } catch (SQLException e) {
             throw new PersistenceException("Error batch inserting objects in database. Objects were: (" +
@@ -173,6 +185,28 @@ public class ObjectWriter implements IObjectWriter{
 
             UpdateResult result = new UpdateResult();
             result.setAffectedRecords(preparedStatement.executeBatch());
+
+            // if versioning object,check update.
+            if(mapping.getVersiongMapping() != null){
+	            int index = 0;
+	            boolean versioningError = false;
+	            for(Object object : objects){
+	            	int updated = result.getAffectedRecords()[index++];
+	            	if(updated == 0){
+	            		versioningError = true;
+	            		break;
+	            	}
+	            }
+	            if(versioningError){
+	            	throw new VersioningException("Versioning error.Fail to batch update" );
+	            }else{
+	            	IVersioningMapping m = mapping.getVersiongMapping();
+		            for(Object object : objects){
+		            	m.incrementVersion(mapping, object);
+		            }
+	            }
+            }
+            
             //addGeneratedKeys(preparedStatement, result);
             return result;
         } catch (SQLException e) {
@@ -205,6 +239,27 @@ public class ObjectWriter implements IObjectWriter{
             }
             UpdateResult result = new UpdateResult();
             result.setAffectedRecords(preparedStatement.executeBatch());
+            
+            // if versioning object,check update.
+            if(mapping.getVersiongMapping() != null){
+	            int index = 0;
+	            boolean versioningError = false;
+	            for(Object object : objects){
+	            	int updated = result.getAffectedRecords()[index++];
+	            	if(updated == 0){
+	            		versioningError = true;
+	            		break;
+	            	}
+	            }
+	            if(versioningError){
+	            	throw new VersioningException("Versioning error.Fail to batch update" );
+	            }else{
+	            	IVersioningMapping m = mapping.getVersiongMapping();
+		            for(Object object : objects){
+		            	m.incrementVersion(mapping, object);
+		            }
+	            }
+            }
             //addGeneratedKeys(preparedStatement, result);
             return result;
         } catch (SQLException e) {
