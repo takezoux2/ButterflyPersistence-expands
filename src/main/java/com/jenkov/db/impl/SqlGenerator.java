@@ -21,6 +21,7 @@ package com.jenkov.db.impl;
 import com.jenkov.db.itf.mapping.IObjectMapping;
 import com.jenkov.db.itf.mapping.IMethodMapping;
 import com.jenkov.db.itf.mapping.IGetterMapping;
+import com.jenkov.db.itf.mapping.IVersioningMapping;
 import com.jenkov.db.itf.ISqlGenerator;
 import com.jenkov.db.itf.PersistenceException;
 
@@ -88,6 +89,10 @@ public class SqlGenerator implements ISqlGenerator{
                 buffer.append(" and ");
             }
         }
+    }
+    private void appendVersioningCheck(StringBuffer buffer, IVersioningMapping mapping) {
+    	buffer.append(" and " + mapping.getColumnName() + " = ?");
+    	
     }
 
     public String generateReadListByPrimaryKeysStatement(IObjectMapping mapping, int primaryKeyCount) throws PersistenceException {
@@ -198,6 +203,9 @@ public class SqlGenerator implements ISqlGenerator{
 
         buffer.append(" where ");
         appendPrimaryKey(buffer, mapping);
+        if(mapping.getVersiongMapping() != null){
+        	appendVersioningCheck(buffer,mapping.getVersiongMapping());
+        }
 
         return buffer.toString();
     }
@@ -211,6 +219,9 @@ public class SqlGenerator implements ISqlGenerator{
         buffer.append(mapping.getTableName());
         buffer.append(" where ");
         appendPrimaryKey(buffer, mapping);
+        if(mapping.getVersiongMapping() != null){
+        	appendVersioningCheck(buffer,mapping.getVersiongMapping());
+        }
 
         return buffer.toString();
 

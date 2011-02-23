@@ -332,4 +332,43 @@ public class ObjectMappingFactory implements IObjectMappingFactory {
         return setter;
     }
 
+    public IVersioningMapping createVersioningMapping(Class memberType){
+    	
+        if(Integer.class.equals(memberType) ||
+        		int.class.equals(memberType)){
+        	return new IntVersioningMapping();
+        }
+        if(Long.class.equals(memberType) ||
+        		long.class.equals(memberType)){
+        	return new LongVersioningMapping();
+        }
+        
+        if(BigDecimal.class.equals(memberType)){
+        	return new BigDecimalVersioningMapping();
+        }
+        return null;
+    }
+
+	@Override
+	public IVersioningMapping createVersioningMapping(Method member,
+			String columnName, boolean isTableMapped) {
+		Class fieldType = getMemberType(member);
+        IVersioningMapping fieldMapping = createVersioningMapping(fieldType);
+
+        if(fieldMapping == null) return null;
+        fieldMapping.setObjectMethod(member);
+        fieldMapping.setColumnName(columnName);
+        fieldMapping.setTableMapped(isTableMapped);
+
+        return fieldMapping;
+	}
+
+	@Override
+	public IVersioningMapping convertToVersioning(IGetterMapping source) {
+		IVersioningMapping copy = createVersioningMapping(
+                source.getObjectMethod(), source.getColumnName(), source.isTableMapped());
+
+        return copy;
+	}
+
 }

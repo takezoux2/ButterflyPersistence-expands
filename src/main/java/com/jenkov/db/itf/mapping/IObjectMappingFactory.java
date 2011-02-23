@@ -107,6 +107,27 @@ public interface IObjectMappingFactory {
      */
     public IGetterMapping copyGetterMapping(IGetterMapping source);
 
+    /**
+     * Creates a versioning mapping with the given <code>Method</code>,  database column name, and
+     * isTableMapped values prefilled. The getter method mapping will be of a type matching the
+     * return type of the getter method.
+     * @param method         The getter <code>Method</code> to map from.
+     * @param dbFieldName    The database column name to map to.
+     * @param isTableMapped  Set to true if the database column exists in a table.
+     *                       False if not (if it only exists in a SQL query).
+     * @return               An new <code>IGetterMapping</code> with the given parameters prefilled.
+     */
+    public IVersioningMapping createVersioningMapping(Method method, String dbFieldName,boolean isTableMapped);
+
+    /**
+     * Convert a getter method mapping to a versioning method mapping.
+     * It will not affect the original getter method mapping.
+     * @param source The <code>IGetterMapping</code> instance to convert.
+     * @return A <code>IVersioningMapping</code> that is converted from source
+     */
+    public IVersioningMapping convertToVersioning(IGetterMapping source);
+    
+    
 
     /**
      * Creates an empty setter method mapping of a type matching the objectType class. The objectType is

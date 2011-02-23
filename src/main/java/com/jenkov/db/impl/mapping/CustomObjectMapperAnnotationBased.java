@@ -75,6 +75,30 @@ public class CustomObjectMapperAnnotationBased{
         Method[] methods = mapping.getObjectClass().getMethods();
         for(Method method : methods){
             if (ClassUtil.isGetter(method)) {
+            	AVersioning versioningAnnotation = (AVersioning) method.getAnnotation(AVersioning.class);
+            	if(versioningAnnotation != null){
+            		IGetterMapping getterMapping = mapping.getGetterMapping(method);
+            		// if getter mapping have been registered,remove it.
+                    if(mapping.getGetterMapping(method) != null){
+            			mapping.removeGetterMapping(method);
+                    }
+            		if(getterMapping == null){
+            			getterMapping = this.factory.createVersioningMapping(method,null,false);
+            		}else{
+            			getterMapping = this.factory.convertToVersioning(getterMapping);
+            		}
+                    if(isSet(versioningAnnotation.columnName())) {
+                        getterMapping.setColumnName (versioningAnnotation.columnName());
+                    }
+                    getterMapping.setObjectMethod(method);
+                    if(isSet(versioningAnnotation.columnType())){
+                        getterMapping.setColumnType   (translateColumnType(method, versioningAnnotation.columnType()));
+                    }
+
+                    mapping.addGetterMapping(getterMapping);
+            		continue;
+            	}
+            	
                 AGetterMapping getterAnnotation = (AGetterMapping) method.getAnnotation(AGetterMapping.class);
                 if(getterAnnotation != null){
                     IGetterMapping getterMapping = mapping.getGetterMapping(method);

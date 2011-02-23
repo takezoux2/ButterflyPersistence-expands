@@ -89,7 +89,7 @@ public class ClassUtil {
          return  member.getName().startsWith("get") ||
                  member.getName().startsWith("is");
     }
-
+    
 
 
     /**

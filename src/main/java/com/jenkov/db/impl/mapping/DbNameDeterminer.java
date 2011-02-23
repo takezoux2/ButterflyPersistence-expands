@@ -113,7 +113,7 @@ public class DbNameDeterminer implements IDbNameDeterminer {
 
             Set<String> tableNamesCaseInsensitive = new HashSet<String>();
             for(String tableName : tableNames){
-                tableNames.add(tableName.toLowerCase());
+            	tableNamesCaseInsensitive.add(tableName.toLowerCase());
             }
 
             if(tableNamesCaseInsensitive.size() == 1){

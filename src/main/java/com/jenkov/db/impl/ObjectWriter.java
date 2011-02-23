@@ -22,9 +22,12 @@ import com.jenkov.db.itf.IObjectWriter;
 import com.jenkov.db.itf.PersistenceException;
 import com.jenkov.db.itf.UpdateResult;
 import com.jenkov.db.itf.Database;
+import com.jenkov.db.itf.VersioningException;
 import com.jenkov.db.itf.mapping.IGetterMapping;
 import com.jenkov.db.itf.mapping.IKeyValue;
 import com.jenkov.db.itf.mapping.IObjectMapping;
+import com.jenkov.db.itf.mapping.ISetterMapping;
+import com.jenkov.db.itf.mapping.IVersioningMapping;
 import com.jenkov.db.util.JdbcUtil;
 
 import java.sql.*;
@@ -91,11 +94,23 @@ public class ObjectWriter implements IObjectWriter{
         try {
             preparedStatement = connection.prepareStatement(sql);
             int parameterCount = insertObjectFieldsInStatement(mapping, object, preparedStatement);
-            insertPrimaryKeyFromObject(mapping, object, preparedStatement, parameterCount);
+            int versioningIndex = insertPrimaryKeyFromObject(mapping, object, preparedStatement, parameterCount);
 
+            if(mapping.getVersiongMapping() != null){
+            	insertVersioningValue(mapping ,object, preparedStatement,versioningIndex);
+            }
             UpdateResult result = new UpdateResult();
             result.setAffectedRecords(new int[1]);
             result.getAffectedRecords()[0] = preparedStatement.executeUpdate();
+            //addGeneratedKeys(preparedStatement, result);
+            if(mapping.getVersiongMapping() != null){
+            	// if no column is updated , it my be versioning error.
+            	if(result.getAffectedRecords()[0] == 0){
+            		throw new VersioningException("Versioning error.Not updateed.\nsql:" + sql );
+            	}else{
+            		mapping.getVersiongMapping().incrementVersion(mapping, object);
+            	}
+            }
 
             //addGeneratedKeys(preparedStatement, result);
             return result;
@@ -107,19 +122,29 @@ public class ObjectWriter implements IObjectWriter{
         }                                                                                 
     }
 
-
     public UpdateResult update(IObjectMapping mapping, Object object, Object oldPrimaryKeyValue,
                                String sql, Connection connection) throws PersistenceException {
         PreparedStatement preparedStatement = null;
         try {
             preparedStatement = connection.prepareStatement(sql);
             int parameterCount = insertObjectFieldsInStatement(mapping, object, preparedStatement);
-            insertPrimaryKeyValue(mapping, oldPrimaryKeyValue, preparedStatement, parameterCount);
-
+            int versioningIndex = insertPrimaryKeyValue(mapping, oldPrimaryKeyValue, preparedStatement, parameterCount);
+            
+            if(mapping.getVersiongMapping() != null){
+            	insertVersioningValue(mapping ,object, preparedStatement,versioningIndex);
+            }
             UpdateResult result = new UpdateResult();
             result.setAffectedRecords(new int[1]);
             result.getAffectedRecords()[0] = preparedStatement.executeUpdate();
             //addGeneratedKeys(preparedStatement, result);
+            if(mapping.getVersiongMapping() != null){
+            	// if no column is updated , it my be versioning error.
+            	if(result.getAffectedRecords()[0] == 0){
+            		throw new VersioningException("Versioning error.Not updateed.\nsql:" + sql );
+            	}else{
+            		mapping.getVersiongMapping().incrementVersion(mapping, object);
+            	}
+            }
             return result;
         } catch (SQLException e) {
             throw new PersistenceException("Error updating object in database. Object was: (" +
@@ -138,7 +163,11 @@ public class ObjectWriter implements IObjectWriter{
             while(iterator.hasNext()){
                 Object object = iterator.next();
                 int parameterCount = insertObjectFieldsInStatement(mapping, object, preparedStatement);
-                insertPrimaryKeyFromObject(mapping, object, preparedStatement, parameterCount);
+                int versioningIndex = insertPrimaryKeyFromObject(mapping, object, preparedStatement, parameterCount);
+
+                if(mapping.getVersiongMapping() != null){
+                	insertVersioningValue(mapping ,object, preparedStatement,versioningIndex);
+                }
                 preparedStatement.addBatch();
             }
 
@@ -167,7 +196,11 @@ public class ObjectWriter implements IObjectWriter{
                 Object object        = objectIterator.next();
                 Object oldPrimaryKey = oldPrimaryKeyIterator.next();
                 int parameterCount = insertObjectFieldsInStatement(mapping, object, preparedStatement);
-                insertPrimaryKeyValue(mapping, oldPrimaryKey, preparedStatement, parameterCount);
+                int versioningIndex = insertPrimaryKeyValue(mapping, oldPrimaryKey, preparedStatement, parameterCount);
+
+                if(mapping.getVersiongMapping() != null){
+                	insertVersioningValue(mapping ,object, preparedStatement,versioningIndex);
+                }
                 preparedStatement.addBatch();
             }
             UpdateResult result = new UpdateResult();
@@ -188,11 +221,21 @@ public class ObjectWriter implements IObjectWriter{
         PreparedStatement preparedStatement = null;
         try{
             preparedStatement = connection.prepareStatement(sql);
-            insertPrimaryKeyFromObject(mapping, object, preparedStatement, 1);
+            int versioningIndex = insertPrimaryKeyFromObject(mapping, object, preparedStatement, 1);
 
+            if(mapping.getVersiongMapping() != null){
+            	insertVersioningValue(mapping ,object, preparedStatement,versioningIndex);
+            }
             UpdateResult result = new UpdateResult();
             result.setAffectedRecords(new int[1]);
             result.getAffectedRecords()[0] = preparedStatement.executeUpdate();
+            
+            if(mapping.getVersiongMapping() != null){
+            	// if no column is updated , it my be versioning error.
+            	if(result.getAffectedRecords()[0] == 0){
+            		throw new VersioningException("Versioning error.Not deleted.\nsql:" + sql );
+            	}
+            }
 //            addGeneratedKeys(preparedStatement, result);
             return result;
          } catch(SQLException e){
@@ -209,7 +252,11 @@ public class ObjectWriter implements IObjectWriter{
             Iterator iterator = objects.iterator();
             while(iterator.hasNext()){
                 Object object = iterator.next();
-                insertPrimaryKeyFromObject(mapping, object, preparedStatement, 1);
+                int versioningIndex = insertPrimaryKeyFromObject(mapping, object, preparedStatement, 1);
+
+                if(mapping.getVersiongMapping() != null){
+                	insertVersioningValue(mapping ,object, preparedStatement,versioningIndex);
+                }
                 preparedStatement.addBatch();
             }
 
@@ -230,7 +277,7 @@ public class ObjectWriter implements IObjectWriter{
         PreparedStatement preparedStatement = null;
         try{
             preparedStatement = connection.prepareStatement(sql);
-            insertPrimaryKeyValue(mapping, primaryKey, preparedStatement, 1);
+            int versioningIndex = insertPrimaryKeyValue(mapping, primaryKey, preparedStatement, 1);
 
             UpdateResult result = new UpdateResult();
             result.setAffectedRecords(new int[1]);
@@ -283,16 +330,17 @@ public class ObjectWriter implements IObjectWriter{
      }
 
 
-    private void insertPrimaryKeyFromObject(IObjectMapping mapping, Object object, PreparedStatement preparedStatement, int parameterCount) throws PersistenceException {
+    private int insertPrimaryKeyFromObject(IObjectMapping mapping, Object object, PreparedStatement preparedStatement, int parameterCount) throws PersistenceException {
         Iterator iterator = mapping.getPrimaryKey().getColumns().iterator();
         while(iterator.hasNext()){
             mapping.getGetterMapping((String) iterator.next())
                     .insertValueFromObject(object, preparedStatement, parameterCount++);
         }
+        return parameterCount;
     }
 
 
-    private void insertPrimaryKeyValue(IObjectMapping mapping, Object oldPrimaryKeyValue, PreparedStatement preparedStatement, int parameterCount) throws PersistenceException {
+    private int insertPrimaryKeyValue(IObjectMapping mapping, Object oldPrimaryKeyValue, PreparedStatement preparedStatement, int parameterCount) throws PersistenceException {
         IKeyValue value = null;
         if(oldPrimaryKeyValue instanceof IKeyValue){
             value = (IKeyValue) oldPrimaryKeyValue;
@@ -305,6 +353,11 @@ public class ObjectWriter implements IObjectWriter{
             mapping.getGetterMapping(column)
                     .insertObject(value.getColumnValue(column), preparedStatement, parameterCount++);
         }
+        return parameterCount;
+    }
+    private int insertVersioningValue(IObjectMapping mapping , Object object, PreparedStatement preparedStatement, int parameterCount) throws PersistenceException {
+    	mapping.getVersiongMapping().compareVersioning(object, preparedStatement, parameterCount);
+    	return parameterCount + 1;
     }
 
     private void addGeneratedKeys(IObjectMapping objectMapping, PreparedStatement preparedStatement, UpdateResult result) throws SQLException {

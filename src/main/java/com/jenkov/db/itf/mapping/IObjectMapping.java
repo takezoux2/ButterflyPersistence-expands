@@ -219,6 +219,7 @@ public interface IObjectMapping {
      */
     public Collection   getSetterMappings();
 
+    public IVersioningMapping getVersiongMapping();
 
 
     /**

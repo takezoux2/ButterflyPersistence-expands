@@ -41,6 +41,7 @@ public class ObjectMapping implements IObjectMapping{
     protected Map        getterMappingMap     = new HashMap();
     protected Map        setterMappingMap     = new HashMap();
     protected IKey       primaryKey           = new Key();
+    protected IVersioningMapping versioningMapping = null;
 
     public String getTableName() {
         return this.tableName;
@@ -116,6 +117,16 @@ public class ObjectMapping implements IObjectMapping{
         this.getterMappingSet.add(mapping);
         this.getterMappingMap.put(mapping.getColumnName(), mapping);
         this.getterMappingMap.put(mapping.getObjectMethod(), mapping);
+        
+        //set versioning mapping
+        if(mapping instanceof IVersioningMapping){
+        	if(versioningMapping == null){
+        		versioningMapping = (IVersioningMapping)mapping;
+        	}else{
+        		// throw error
+        		throw new PersistenceException("There are two versioning fields!Only one versioning field is allowed.");
+        	}
+        }
     }
 
     public void addSetterMapping(ISetterMapping mapping) throws PersistenceException{
@@ -348,5 +359,10 @@ public class ObjectMapping implements IObjectMapping{
 
         return super.hashCode();
     }
+
+	@Override
+	public IVersioningMapping getVersiongMapping() {
+		return this.versioningMapping;
+	}
 
 }
