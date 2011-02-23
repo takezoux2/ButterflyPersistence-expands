@@ -5,4 +5,41 @@
   <version>5.3.9-SNAPSHOT</version>
   <name>Butterfly persistence</name>
   <description>Light O/R mapper</description>
+  
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  
+  <distributionManagement>
+        <repository>
+          <id>geishatokyo.nexus</id>
+          <url>${deploy-release}</url>
+        </repository>
+        <snapshotRepository>
+          <id>geishatokyo.nexus.snapshot</id>
+          <url>${deploy-snapshot}</url>
+        </snapshotRepository>
+  </distributionManagement>
+  
+  <build>
+  	<plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+  	</plugins>
+  </build>
+  
 </project>
